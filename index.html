@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>可编辑图文网页</title>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+  transition: all 0.25s ease;
+}
+
+:root {
+  --bg: #f0f7ff;
+  --card: #ffffff;
+  --nav: #4d8bf1;
+  --text: #2d3748;
+  --subtext: #718096;
+  --border: #e2e8f0;
+  --btn: #4d8bf1;
+  --btn-hover: #3b74d8;
+  --msg-item: #f7faff;
+  --del: #f56565;
+}
+
+[data-theme="dark"] {
+  --bg: #1a202c;
+  --card: #2d3748;
+  --nav: #3b74d8;
+  --text: #f7fafc;
+  --subtext: #a0aec0;
+  --border: #4a5568;
+  --btn: #4d8bf1;
+  --btn-hover: #3b74d8;
+  --msg-item: #4a5568;
+  --del: #f56565;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.navbar {
+  background: var(--nav);
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 99;
+  color: white;
+}
+
+.navbar h1 {
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.nav-right {
+  display: flex;
+  gap: 10px;
+}
+
+.theme-btn, .reset-btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: none;
+  background: rgba(255,255,255,0.2);
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.container {
+  max-width: 900px;
+  margin: 30px auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 28px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.card-title {
+  font-size: 19px;
+  font-weight: 500;
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.edit-area {
+  width: 100%;
+  min-height: 300px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 16px;
+  outline: none;
+  background: var(--card);
+  color: var(--text);
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+.edit-area img,
+.edit-area video {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 10px 0;
+  display: block;
+}
+
+.upload-group {
+  display: flex;
+  gap: 10px;
+  margin: 10px 0;
+  flex-wrap: wrap;
+}
+
+.upload-btn {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  background: var(--btn);
+  color: white;
+  cursor: pointer;
+}
+
+.input-group {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.input-name, .input-msg {
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 15px;
+  outline: none;
+  background: var(--card);
+  color: var(--text);
+}
+
+.input-name { flex:1; min-width:120px; }
+.input-msg { flex:3; min-width:200px; }
+
+.send-btn {
+  padding: 12px 20px;
+  border-radius: 8px;
+  border: none;
+  background: var(--btn);
+  color: #fff;
+  cursor: pointer;
+}
+
+.msg-list {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.msg-item {
+  padding: 16px;
+  background: var(--msg-item);
+  border-radius: 10px;
+  position: relative;
+}
+
+.msg-name { font-weight:500; margin-bottom:4px; }
+.msg-content { margin-bottom:6px; }
+.msg-time { font-size:12px; color:var(--subtext); }
+
+.del-btn {
+  position: absolute;
+  top:14px; right:14px;
+  background: var(--del);
+  color:#fff;
+  border:none;
+  border-radius:4px;
+  padding:3px 7px;
+  font-size:12px;
+  cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="navbar">
+  <h1>可编辑图文网页</h1>
+  <div class="nav-right">
+    <button class="theme-btn" id="toggleTheme">深色/浅色</button>
+    <button class="reset-btn" onclick="resetAll()">重置数据</button>
+  </div>
+</div>
+
+<div class="container">
+  <div class="card">
+    <div class="card-title">📝 可编辑区域（支持图片/视频）</div>
+
+    <div class="upload-group">
+      <button class="upload-btn" onclick="document.getElementById('imgUpload').click()">插入图片</button>
+      <button class="upload-btn" onclick="document.getElementById('videoUpload').click()">插入视频</button>
+      <input type="file" id="imgUpload" accept="image/*" style="display:none;">
+      <input type="file" id="videoUpload" accept="video/*" style="display:none;">
+    </div>
+
+    <div class="edit-area" contenteditable="true" id="editArea"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">💬 留言板</div>
+    <div class="input-group">
+      <input type="text" class="input-name" id="name" placeholder="昵称">
+      <input type="text" class="input-msg" id="msg" placeholder="输入留言...">
+      <button class="send-btn" onclick="sendMessage()">发送</button>
+    </div>
+    <div class="msg-list" id="msgList"></div>
+  </div>
+</div>
+
+<script>
+const editArea = document.getElementById('editArea');
+
+// 加载内容
+function loadEditContent() {
+  let content = localStorage.getItem('editContent');
+  if (content) {
+    editArea.innerHTML = content;
+  } else {
+    editArea.innerHTML = "点击插入图片/视频，可直接编辑文字，内容会自动保存。";
+  }
+}
+
+// 自动保存
+editArea.addEventListener('input', () => {
+  localStorage.setItem('editContent', editArea.innerHTML);
+});
+
+// 插入图片
+document.getElementById('imgUpload').addEventListener('change', function(e) {
+  let file = e.target.files[0];
+  if (!file) return;
+  let url = URL.createObjectURL(file);
+  editArea.innerHTML += `< img src="${url}" alt="图片">`;
+  localStorage.setItem('editContent', editArea.innerHTML);
+});
+
+// 插入视频
+document.getElementById('videoUpload').addEventListener('change', function(e) {
+  let file = e.target.files[0];
+  if (!file) return;
+  let url = URL.createObjectURL(file);
+  editArea.innerHTML += `<video controls src="${url}"></video>`;
+  localStorage.setItem('editContent', editArea.innerHTML);
+});
+
+// 深色模式
+function loadTheme() {
+  if (localStorage.getItem('theme') === 'dark') {
+    document.body.setAttribute('data-theme', 'dark');
+  }
+}
+
+document.getElementById('toggleTheme').onclick = () => {
+  const isDark = document.body.getAttribute('data-theme') === 'dark';
+  isDark ? document.body.removeAttribute('data-theme') : document.body.setAttribute('data-theme','dark');
+  localStorage.setItem('theme', isDark ? 'light' : 'dark');
+};
+
+// 留言功能
+function sendMessage() {
+  let name = document.getElementById('name').value.trim();
+  let content = document.getElementById('msg').value.trim();
+  if (!name || !content) { alert('请填写完整'); return; }
+  let time = new Date().toLocaleString();
+  let list = JSON.parse(localStorage.getItem('messages')) || [];
+  list.unshift({ name, content, time });
+  localStorage.setItem('messages', JSON.stringify(list));
+  loadMessage();
+  document.getElementById('msg').value = '';
+}
+
+function loadMessage() {
+  let list = JSON.parse(localStorage.getItem('messages')) || [];
+  let html = '';
+  list.forEach((item, i) => {
+    html += `
+    <div class="msg-item">
+      <div class="msg-name">${item.name}</div>
+      <div class="msg-content">${item.content}</div>
+      <div class="msg-time">${item.time}</div>
+      <button class="del-btn" onclick="delMsg(${i})">删除</button>
+    </div>`;
+  });
+  document.getElementById('msgList').innerHTML = html;
+}
+
+function delMsg(index) {
+  if (!confirm('确定删除？')) return;
+  let list = JSON.parse(localStorage.getItem('messages')) || [];
+  list.splice(index, 1);
+  localStorage.setItem('messages', JSON.stringify(list));
+  loadMessage();
+}
+
+// 重置
+function resetAll() {
+  if (!confirm('确定清空所有数据？')) return;
+  localStorage.clear();
+  location.reload();
+}
+
+// 初始化
+window.onload = function () {
+  loadTheme();
+  loadEditContent();
+  loadMessage();
+};
+</script>
+</body>
+</html>
